@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 @Service
 public class MovieService {
@@ -68,5 +69,85 @@ public class MovieService {
             return Optional.empty();
         }
         return Optional.ofNullable(movieMap.get(id));
+    }
+
+    /**
+     * Ahoy matey! Search for treasure (movies) in our vast collection using various criteria.
+     * This method filters movies based on name, id, and genre parameters.
+     * 
+     * @param name Movie name to search for (case-insensitive partial match)
+     * @param id Specific movie ID to find
+     * @param genre Genre to filter by (case-insensitive partial match)
+     * @return List of movies matching the search criteria
+     */
+    public List<Movie> searchMovies(String name, Long id, String genre) {
+        logger.info("Arrr! Starting treasure hunt for movies with criteria - name: '{}', id: {}, genre: '{}'", 
+                   name, id, genre);
+        
+        List<Movie> results = movies.stream()
+            .filter(movie -> matchesSearchCriteria(movie, name, id, genre))
+            .collect(Collectors.toList());
+        
+        logger.info("Shiver me timbers! Found {} treasures matching yer search criteria", results.size());
+        return results;
+    }
+
+    /**
+     * Determines if a movie matches the search criteria like a skilled pirate navigator
+     * checking if treasure matches the map description.
+     * 
+     * @param movie The movie to check
+     * @param name Name criteria (null or empty means no name filter)
+     * @param id ID criteria (null means no ID filter)
+     * @param genre Genre criteria (null or empty means no genre filter)
+     * @return true if movie matches all provided criteria
+     */
+    private boolean matchesSearchCriteria(Movie movie, String name, Long id, String genre) {
+        // Check ID match first - most specific criteria
+        if (id != null && !movie.getId().equals(id)) {
+            return false;
+        }
+        
+        // Check name match - case insensitive partial match
+        if (name != null && !name.trim().isEmpty()) {
+            String movieName = movie.getMovieName().toLowerCase();
+            String searchName = name.toLowerCase().trim();
+            if (!movieName.contains(searchName)) {
+                return false;
+            }
+        }
+        
+        // Check genre match - case insensitive partial match
+        if (genre != null && !genre.trim().isEmpty()) {
+            String movieGenre = movie.getGenre().toLowerCase();
+            String searchGenre = genre.toLowerCase().trim();
+            if (!movieGenre.contains(searchGenre)) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    /**
+     * Batten down the hatches! Validate search parameters to prevent scurvy bugs.
+     * 
+     * @param name Movie name parameter
+     * @param id Movie ID parameter  
+     * @param genre Genre parameter
+     * @return true if at least one valid search parameter is provided
+     */
+    public boolean hasValidSearchCriteria(String name, Long id, String genre) {
+        boolean hasName = name != null && !name.trim().isEmpty();
+        boolean hasId = id != null && id > 0;
+        boolean hasGenre = genre != null && !genre.trim().isEmpty();
+        
+        boolean isValid = hasName || hasId || hasGenre;
+        
+        if (!isValid) {
+            logger.warn("Arrr! No valid search criteria provided - all parameters be empty or null!");
+        }
+        
+        return isValid;
     }
 }
